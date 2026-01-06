@@ -1,6 +1,11 @@
 # BADASS
 Big Automated Drums And Stuff System is a pipeline to automate authoring for rhythm games
+This is a project for automating large parts of the authoring process for instruments-based rhythm games, starting from drums. 
+Requirements:
+- Cockos Reaper 7 (or any version supporting Lua and the plug-ins used)
+- Python 2.7+
 
+It's split in different scripts and sections that represent steps in the automation process.
 
 # Audio Importer (Drums only for now)
 
