@@ -1,6 +1,7 @@
 -- REAPER Script: Import Drums (Strict Match + Immediate Mode)
 -- FIX: Strict Token Matching (Only matches -token-, _token_, etc.)
 -- FIX: Immediate processing to prevent stale pointers/restart bug.
+-- FIX: Strips GUID during copy to prevent ghost items/overlapping cleanup failures.
 
 local function Msg(str)
     reaper.ShowConsoleMsg(tostring(str) .. "\n")
@@ -93,12 +94,23 @@ local function SelectOnlyItem(item)
 end
 
 local function CopyItemToTrack(item, destTrack)
-    reaper.UpdateItemInProject(item) 
+    -- Get the raw state of the item
     local _, chunk = reaper.GetItemStateChunk(item, "", false)
+    
+    -- [FIX] Remove the existing GUID from the chunk.
+    -- If we don't do this, the new item has the exact same ID as the old one.
+    -- This causes REAPER to confuse which item is selected during the "Delete Take" step.
+    chunk = chunk:gsub("GUID {.-}\n", "")
+    
     local newItem = reaper.AddMediaItemToTrack(destTrack)
     reaper.SetItemStateChunk(newItem, chunk, false)
+    
     local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
     reaper.SetMediaItemInfo_Value(newItem, "D_POSITION", pos)
+    
+    -- Ensure the new item is fresh in REAPER's eyes
+    reaper.UpdateItemInProject(newItem)
+    
     return newItem
 end
 
