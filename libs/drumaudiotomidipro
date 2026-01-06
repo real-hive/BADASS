@@ -1,0 +1,227 @@
+desc:Audio To MIDI Drum Trigger (True Peak Logic)
+desc:Audio To MIDI Drum Trigger [Stillwell + True Peak]
+//tags: processing MIDI generator
+//author: Stillwell (Modded)
+
+slider1:-17<-60,6,1>Open Threshold (dB)
+slider2:-18<-60,6,1>Close Threshold (dB)
+slider3:30<0,200,0.1>Retrigger Interval (ms)
+slider4:0<0,100,0.1>Original Signal Mix (%)
+slider5:10<1,16,1>MIDI Channel
+slider6:69<0,127,1>MIDI Note
+slider7:1<0.1,7.0,0.1>Peak Detection Interval
+slider8:1<-5.0,5.0,0.01>Trigger Align (ms)
+slider9:50<0,200,1>Transient Lookback (ms)
+slider10:3.0<1.0,100.0,0.1>Transient Sensitivity (Ratio)
+slider11:1<0,1,1{Average Window (Diluted),True Peak (Accurate)}>Detection Mode
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+@init
+  sending=0;
+  sent=0;
+  noteon=9*16;
+  noteoff=8*16;
+  measuring=0;
+  meascnt=0;
+  maxvel=0;
+  triggerpos=0;
+  threshlat = 0.001 * srate;
+  
+  // State for True Peak finding
+  tp_wait_samples = 0;
+  tp_measuring = 0;
+  tp_max_found = 0;
+
+  // --- MEMORY INIT ---
+  buf_start = 0;
+  buf_len = floor(srate * 0.5); 
+  buf_write_pos = 0;
+  memset(buf_start, 0, buf_len);
+
+  // --- LOGGING INIT ---
+  log_base_id = 100;
+  log_head = 0; 
+  log_count = 0; 
+
+@block
+  pos=0;
+  triggerpos=0;
+
+@slider
+  othresh=2^(slider1/6);
+  cthresh=2^(slider2/6);
+  retrigger = (slider3 / 1000) * srate;
+  mix = slider4 / 100;
+  chan=slider5-1;
+  note=slider6;
+  velperiod=(slider7 / 1000) * srate;
+  threshlat=(slider8 / 1000) * srate;
+  oncmd=noteon+chan;
+  offcmd=noteoff+chan;
+
+  // --- TRANSIENT SETTINGS ---
+  lookback_ms = slider9;
+  lookback_samps = floor((lookback_ms/1000) * srate);
+  lookback_samps = min(lookback_samps, buf_len - 1000);
+  
+  // Attack window (Time to wait for peak)
+  attack_ms = 4;
+  curr_window_samps = floor((attack_ms/1000) * srate); 
+  spike_ratio = slider10;
+  
+  // 0 = Avg, 1 = Peak
+  detect_mode = slider11; 
+
+@sample
+  pos += 1;
+  trigwait += 1;    
+
+  linvel=min(1,max(abs(spl0),abs(spl1)));
+  
+  // --- BUFFER WRITE ---
+  buf_start[buf_write_pos] = linvel;
+  buf_write_pos += 1;
+  buf_write_pos >= buf_len ? buf_write_pos = 0;
+
+  // --- LOGIC START ---
+  
+  // 1. Initial Threshold Check (Gate opens)
+  initial_trigger = (linvel >= othresh && sent==0 && sending==0 && measuring==0 && tp_measuring==0 && trigwait >= retrigger);
+  
+  // Start waiting for the peak if gate opens
+  initial_trigger ? (
+      tp_measuring = 1;
+      tp_wait_samples = 0;
+      tp_max_found = linvel;
+      
+      // We set triggerpos here, but we won't send yet
+      triggerpos = pos;
+  );
+
+  // 2. While waiting for peak (Scan the next 4ms)
+  tp_measuring == 1 ? (
+      tp_wait_samples += 1;
+      tp_max_found = max(tp_max_found, linvel);
+      
+      // Window full? Now we decide.
+      tp_wait_samples >= curr_window_samps ? (
+          tp_measuring = 0; // Stop looking
+          
+          should_trigger = 0;
+          
+          slider9 > 0 ? (
+              // --- PERFORM RATIO CHECK ---
+              sum_prev = 0;
+              
+              // Use the MAX peak found during the wait as the "Hit Volume"
+              hit_vol = tp_max_found;
+              
+              // Calculate Tail Average
+              // We look back starting from BEFORE our wait window started
+              // So we subtract (current_pos - start_of_wait)
+              j = 0;
+              loop(lookback_samps,
+                  // Logic: Current Write Pos - (Wait Window we just finished) - (Lookback iterator)
+                  idx = buf_write_pos - 1 - curr_window_samps - j;
+                  idx < 0 ? idx += buf_len;
+                  sum_prev += buf_start[idx];
+                  j += 1;
+              );
+              avg_prev = sum_prev / lookback_samps;
+              
+              // Mode 0: Use Average (Old way) | Mode 1: Use Found Peak
+              numerator = detect_mode == 0 ? (hit_vol * 0.5) : hit_vol; 
+              // (Note: In Mode 0 I scaled it down slightly to mimic 'average' behavior, 
+              // but Mode 1 is what you want for accuracy).
+
+              ratio = numerator / (avg_prev + 0.000001);
+              
+              ratio > spike_ratio ? (
+                  should_trigger = 1;
+                  
+                  // Log Success
+                  cur_ts_num = ts_num > 0 ? ts_num : 4; 
+                  cur_meas = floor(beat_position / cur_ts_num) + 1;
+                  cur_beat = floor(beat_position % cur_ts_num) + 1;
+                  
+                  str_id = log_base_id + log_head;
+                  sprintf(str_id, "%d.%d | Jump %.1fx | Hit %.2f | Tail %.2f", cur_meas, cur_beat, ratio, numerator, avg_prev);
+                  log_head = (log_head + 1) % 10;
+                  log_count = min(log_count + 1, 10);
+              );
+          ) : (
+              // Bypass Mode
+              should_trigger = 1;
+              
+              cur_ts_num = ts_num > 0 ? ts_num : 4; 
+              cur_meas = floor(beat_position / cur_ts_num) + 1;
+              cur_beat = floor(beat_position % cur_ts_num) + 1;
+              str_id = log_base_id + log_head;
+              sprintf(str_id, "%d.%d | Basic Thresh (No Check)", cur_meas, cur_beat);
+              log_head = (log_head + 1) % 10;
+              log_count = min(log_count + 1, 10);
+          );
+          
+          // If passed, hand off to standard velocity measurer
+          should_trigger ? (
+              measuring = 1;
+              maxvel = tp_max_found;
+              meascnt = 0;
+              // triggerpos was already set at start
+          );
+      );
+  );
+
+  // --- STANDARD VELOCITY & MIDI OUTPUT ---
+  measuring==1 ? (
+    meascnt += 1;
+    meascnt >= velperiod ? (
+      measuring=0;
+      sending=1;
+      meascnt=0;
+    ) : (
+      maxvel=max(maxvel,linvel);
+    );
+  );
+  sent==0 && sending==1 ? (
+    sent=1;
+    sending=0;
+    trigwait=0;
+    velocity=max(0,min(127,floor(maxvel*127)));
+    midisend(max(0,triggerpos-threshlat), oncmd, note|velocity*256);
+  );
+  linvel <= cthresh && sent==1 && trigwait >= retrigger ? (
+    sent=0;
+    trigwait=0;
+    maxvel=0;
+    midisend(max(0,triggerpos-threshlat), offcmd, note);
+  );
+
+  spl0 = spl0 * mix;
+  spl1 = spl1 * mix;
+
+@gfx 650 200
+  gfx_setfont(1, "Arial", 13);
+  gfx_set(0.9, 0.9, 0.9, 1);
+  gfx_x = 10; gfx_y = 10;
+  
+  gfx_drawstr("TRIGGER DEBUG (MBT | Ratio | Peak Vol | Tail Vol):");
+  gfx_y += 20;
+
+  k = 0;
+  loop(log_count,
+     r_idx = log_head - 1 - k;
+     r_idx < 0 ? r_idx += 10;
+     
+     color = 1.0 - (k * 0.1); 
+     gfx_set(color, color, color, 1.0);
+     
+     gfx_x = 10;
+     gfx_drawstr(log_base_id + r_idx);
+     gfx_y += 15;
+     k += 1;
+  );
