@@ -15,6 +15,15 @@ V.0.1
     * (loaded with the **Action List** > **New Action** > **Load...**)
 * **Plugins:** `Audio To MIDI Drum Trigger (True Peak Logic)`
 
+## ⚠️ Limitations for drums notes detection
+
+* **Source Dependency:** Automated drums authoring only works based on what the stems make available. If some sound has been wrongly assigned to another instrument or stem during separation, it won't be correctly picked up.
+* **Binary Toms:** This is very much a binary system: all tom notes will be assigned to the same color (defaulting to the mapped note). There is no pitch detection to separate High/Mid/Low toms automatically.
+* **No Flams:** Flams are not detected and must be manually added later.
+* **Maximum accuracy for 1/8th notes, for 1/16h notes it varies:** Because of the way wave forms work, rapid hits are hard to detect without on the other hand triggering false positivies. 1/16th notes are fairly reliable on snare and kicks and possibly on rides (not tested yet). On toms and crashes accuracy only goes down to 1/8th notes. For hi-hats, see below.
+* **Hi-Hat Dynamics:** Accuracy for 16th notes on the Hi-Hat is lower. Since these ghost notes are softer by nature, if a soft Hi-Hat note comes immediately after a loud accent (common in two-handed patterns), it will likely get lost in the transient detection.
+* **Not perfect by design:** This system was created to drastically speed up authoring. For this reason, settings and algorithms are mainly targeted at average good/great results, not perfect results for one song but decent for others.
+
 ---
 
 # 🥁 Quickstart: Zero to Transcribed
