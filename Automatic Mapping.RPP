@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.57/win64" 1767749479 0
+<REAPER_PROJECT 0.1 "7.57/win64" 1767750772 0
   RIPPLE 0 0
   GROUPOVERRIDE 0 0 0 0
   AUTOXFADE 129
@@ -15,7 +15,7 @@
   TIMEMODE 1 0 -1 24 2 0 -1 0
   CURSOR 2.22959000000023
   ZOOM 243.72501808773026 0 0
-  VZOOMEX 2 1238
+  VZOOMEX 2 626
   USE_REC_CFG 0
   RECMODE 1
   SMPTESYNC 0 30 100 40 1000 300 0 0 0 0 0
@@ -291,16 +291,23 @@
     MIDIOUT -1
     MAINSEND 1 0
     <FXCHAIN
-      WNDRECT 412 285 716 302
+      WNDRECT 412 285 940 566
       SHOW 0
-      LASTSEL 0
+      LASTSEL 1
       DOCKED 0
-      BYPASS 0 0 0
+      BYPASS 1 0 0
       <JS midi/drumtrigger ""
         -12 -15 50 0 10 35 1 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       >
       FLOATPOS 0 0 0 0
       FXID {2D557378-25D1-4863-B3F0-4077358E2AF3}
+      WAK 0 0
+      BYPASS 0 0 0
+      <JS drumaudiotomidipro ""
+        -17 -18 30 0 10 35 1 1 50 5 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      >
+      FLOATPOS 0 0 0 0
+      FXID {6A069186-FE57-4BC2-A8E0-FA85D827E407}
       WAK 0 0
     >
   >
