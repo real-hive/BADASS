@@ -1,11 +1,103 @@
-# BADASS
-Big Automated Drums And Stuff System is a pipeline to automate authoring for rhythm games
-This is a project for automating large parts of the authoring process for instruments-based rhythm games, starting from drums. 
+# BADASS: Big Automated Drums And Stuff System
+**BADASS** is a pipeline designed to automate large parts of the authoring process for instrument-based rhythm games, starting with drums. It takes raw audio stems and converts them into game-ready MIDI maps (`PART DRUMS`) using a combination of Lua scripts and custom JSFX plugins.
+
 Requirements:
 - Cockos Reaper 7 (or any version supporting Lua and the plug-ins used)
 - Python 2.7+
 
 It's split in different scripts and sections that represent steps in the automation process.
+
+
+## 📋 Prerequisites
+
+* **Software:** Cockos Reaper 7 (or any version supporting Lua and the required plugins).
+* **Template:** `Automatic Mapping.RPP` (The project template with pre-routed tracks).
+* **Scripts:**
+    * `prep_automation_drums_tracks.lua`
+    * `fix_automated_drums.lua`
+    * (both loaded with the **Action List** > **New Action** > **Load...**
+* **Plugins:** `Audio To MIDI Drum Trigger (True Peak Logic)`
+
+
+## 🚀 Phase 1: Audio Preparation (Outside Reaper)
+
+### 1. Get Your Stems
+You need isolated drum stems. A simple "Drums vs Song" split is not enough. Use a high-quality stem separator (e.g., using the latest Ensemble models in MVSEP) to extract the following specific tracks:
+* **Kick**
+* **Snare**
+* **Hi-Hat**
+* **Ride**
+* **Crash**
+* **Toms**
+
+### 2. File Naming (Strict Rules)
+The automation script relies on strict pattern matching. Your filenames **must** contain specific keywords, either delimited by dashes/underscores or wrapped in them.
+**Required Keywords:** `kick`, `snare`, `toms`, `crash`, `ride`, `hh`, `drums`, `residual` (or `other`).
+
+| Filename Example | Status | Reason |
+| :--- | :--- | :--- |
+| `01-Snare-Top.wav` | ✅ **Good** | Delimited by `-` |
+| `Song_Kick_01.wav` | ✅ **Good** | Delimited by `_` |
+| `Ride-Main.wav` | ✅ **Good** | Delimited |
+| `MySnare.wav` | ❌ **Bad** | No delimiter |
+| `KickDrum.wav` | ❌ **Bad** | No delimiter |
+
+
+## 🎛️ Phase 2: Import & Organization (In Reaper)
+
+### 1. Open the Template
+Open `Automatic Mapping.RPP`.
+
+### 2. Drag & Drop
+Drag all your prepared stems into the project, placing them **at the bottom** of the track list (below existing tracks).
+
+### 3. Run the Prep Script
+* Open the **Action List** (`?` key).
+* Run: **`Script: prep_automation_drums_tracks.lua`**.
+    * *Alert:* The script will ask for confirmation to delete tracks **twice**. Click **Confirm/Yes**.
+
+### 4. Alignment
+Once processed, ensure your audio is aligned with the project grid. You can now import your existing tempo map or create one to match the audio.
+
+
+## ⚡ Phase 3: MIDI Generation (The Trigger)
+
+### 1. Record to MIDI
+* **Record** the song from start to finish.
+* 
+### 2. Run the Processor Script
+* Open Action List and run: **`Script: fix_automated_drums.lua`**.
+* Click **Run Process**.
+
+## ✅ Final Result
+
+Check the **`PART DRUMS`** track. It now contains a quantized, cleaned, and mapped drum chart ready for final human review.
+
+```text
+[ SUMMARY FLOWCHART ]
+
+[ Raw Stems ] 
+      │ (Renamed: Kick_01.wav, etc.)
+      ▼
+[ Drag to Reaper ]
+      │
+      ▼
+[ Run: prep_automation_drums_tracks.lua ] ──► (Moves tracks, Normalizes Cymbals)
+      │
+      ▼
+[ JSFX Triggers ] ──────────────────────────► (Detects Hits via True Peak)
+      │
+      ▼
+[ Record to "TRANSCRIPTION" ]
+      │
+      ▼
+[ Run: Drum Transcription Processor.lua ] ──► (Quantizes, Dedupes, Remaps)
+      │
+      ▼
+[ ✅ PART DRUMS READY ]
+```
+
+---
 
 # Audio Importer (Drums only for now)
 
