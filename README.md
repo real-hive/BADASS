@@ -13,7 +13,9 @@
 
 ---
 
-# 🥁 Quickstart: Zero to Transcribed (BADASS Pipeline, speedrun, no questions asked)
+# 🥁 Quickstart: Zero to Transcribed
+###  (BADASS Pipeline, speedrun, no questions asked)
+*You can do a deep dive in the later part of the document and in the Wiki, this is just the quick and dirty rundown of going from having an MP3 of your song to having PART DRUMS created*
 
 ## 🚀 Phase 1: Audio Preparation (Outside Reaper)
 
