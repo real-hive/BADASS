@@ -169,3 +169,71 @@ The script copies notes from `TRANSCRIPTION` to `PART DRUMS` and re-pitches them
 ## ⚠️ Requirements
 
 * **REAPER:** Tested on REAPER 6.x and 7.x.
+
+# Audio To MIDI Drum Trigger (True Peak Logic)
+
+## Overview
+This version of the standard JSFX Drum Trigger includes a **True Peak analysis algorithm**. Unlike standard triggers that fire solely based on a fixed volume threshold, this mod analyzes the *context* of the audio. It compares the incoming transient against the average volume of the preceding audio (the "Lookback" window) to distinguish genuine drum hits from bleed or sustain.
+
+## New Mod Parameters
+
+### 1. Transient Lookback (ms)
+* **Slider 9**
+* **Range:** 0ms to 200ms
+
+This defines the "Context Window" preceding a potential hit. When the signal crosses the open threshold, the plugin looks backwards into a memory buffer for the duration set here. It calculates the average volume of that previous audio.
+
+* **Higher Values (e.g., 50-100ms):** The plugin compares the hit against the general "noise floor" or room tone. This is more stable for isolated tracks.
+* **Lower Values (e.g., 10-20ms):** The plugin compares the hit against the immediate previous audio. This is better for fast rolls where the sustain of the previous hit might mask the attack of the next one.
+
+### 2. Transient Sensitivity (Ratio)
+* **Slider 10**
+* **Range:** 1.0 to 100.0
+
+This acts as a "Contrast Control". It sets the required ratio between the **Detected Peak** and the **Lookback Average**.
+
+$$\text{Ratio} = \frac{\text{Current Peak Volume}}{\text{Average Lookback Volume}}$$
+
+* **Example (Ratio 3.0):** The transient peak must be **3 times louder** than the average volume of the lookback window to trigger a MIDI note.
+* **Tuning:**
+    * **Increase** this value to eliminate bleed (e.g., snare bleed on a kick track).
+    * **Decrease** this value if ghost notes or soft hits are being ignored.
+
+
+
+### 3. Detection Mode
+* **Slider 11**
+* **Options:** Average Window (Diluted), True Peak (Accurate)
+
+This changes how the plugin calculates the "numerator" of the ratio formula.
+
+* **Mode 0: Average Window (Diluted)**
+    * *Logic:* Uses `Hit Volume * 0.5`.
+    * *Behavior:* This mimics older "RMS" style detection. It is less sensitive and smoother. Use this for messy recordings where the transient is not very sharp.
+* **Mode 1: True Peak (Accurate)**
+    * *Logic:* Uses the raw `Hit Volume`.
+    * *Behavior:* This uses the absolute loudest sample found within the 4ms attack window. It is highly accurate and aggressive. This is the recommended mode for modern, punchy drums.
+
+---
+
+## The "True Peak" Workflow
+
+Unlike standard triggers that fire the instant a threshold is crossed, this plugin adds a smart logic phase:
+
+1.  **Gate Open:** Signal crosses the `Open Threshold` (Slider 1).
+2.  **Wait Phase:** The plugin waits for **4ms** (hardcoded `attack_ms`) to scan for the true maximum peak of the transient.
+3.  **Context Check:** It calculates the average volume of the `Lookback` window.
+4.  **Decision:**
+    * If `(Peak / Lookback) > Sensitivity`, the Note is fired.
+    * If the ratio is too low (meaning the volume rose, but not sharply enough relative to the background), the trigger is rejected as "Bleed/Sustain".
+
+## Debugging
+
+The plugin features an on-screen Graphics Overlay (`@gfx`) that displays the statistics of the last 10 detected hits:
+
+* **MBT:** Measure.Beat.Time location.
+* **Jump:** The calculated ratio (e.g., `3.5x`).
+* **Hit:** The volume of the peak.
+* **Tail:** The average volume of the lookback window.
+
+*Use these numbers to fine-tune your Sensitivity Ratio slider.*
