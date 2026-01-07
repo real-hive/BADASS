@@ -1,6 +1,9 @@
 # BADASS: Big Automated Drums And Stuff System
 **BADASS** is a pipeline designed to automate large parts of the authoring process for instrument-based rhythm games, starting with drums. It takes raw audio stems and converts them into game-ready MIDI maps (`PART DRUMS`) using a combination of Lua scripts and custom JSFX plugins.
 
+V.0.1
+- Only tested on 2 songs for now
+
 ## 📋 Prerequisites
 
 * **Software:** Cockos Reaper 7 (or any version supporting Lua and the required plugins).
