@@ -11,6 +11,8 @@
     * (both loaded with the **Action List** > **New Action** > **Load...**
 * **Plugins:** `Audio To MIDI Drum Trigger (True Peak Logic)`
 
+---
+
 # 🥁 Quickstart: Zero to Transcribed (BADASS Pipeline, speedrun, no questions asked)
 
 ## 🚀 Phase 1: Audio Preparation (Outside Reaper)
