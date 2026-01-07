@@ -1,11 +1,101 @@
-# BADASS
-Big Automated Drums And Stuff System is a pipeline to automate authoring for rhythm games
-This is a project for automating large parts of the authoring process for instruments-based rhythm games, starting from drums. 
-Requirements:
-- Cockos Reaper 7 (or any version supporting Lua and the plug-ins used)
-- Python 2.7+
+# BADASS: Big Automated Drums And Stuff System
+**BADASS** is a pipeline designed to automate large parts of the authoring process for instrument-based rhythm games, starting with drums. It takes raw audio stems and converts them into game-ready MIDI maps (`PART DRUMS`) using a combination of Lua scripts and custom JSFX plugins.
 
-It's split in different scripts and sections that represent steps in the automation process.
+## 📋 Prerequisites
+
+* **Software:** Cockos Reaper 7 (or any version supporting Lua and the required plugins).
+* **Template:** `Automatic Mapping.RPP` (The project template with pre-routed tracks).
+* **Scripts:**
+    * `prep_automation_drums_tracks.lua`
+    * `fix_automated_drums.lua`
+    * (both loaded with the **Action List** > **New Action** > **Load...**
+* **Plugins:** `Audio To MIDI Drum Trigger (True Peak Logic)`
+
+---
+
+# 🥁 Quickstart: Zero to Transcribed
+###  (BADASS Pipeline, speedrun, no questions asked)
+*You can do a deep dive in the later part of the document and in the Wiki, this is just the quick and dirty rundown of going from having an MP3 of your song to having PART DRUMS created*
+
+## 🚀 Phase 1: Audio Preparation (Outside Reaper)
+
+### 1. Get Your Stems
+You need isolated drum stems. A simple "Drums vs Song" split is not enough. Use a high-quality stem separator (e.g., using the latest Ensemble models in MVSEP) to extract the following specific tracks:
+* **Kick**
+* **Snare**
+* **Hi-Hat**
+* **Ride**
+* **Crash**
+* **Toms**
+
+### 2. File Naming (Strict Rules)
+The automation script relies on strict pattern matching. Your filenames **must** contain specific keywords, either delimited by dashes/underscores or wrapped in them.
+**Required Keywords:** `kick`, `snare`, `toms`, `crash`, `ride`, `hh`, `drums`, `residual` (or `other`).
+
+| Filename Example | Status | Reason |
+| :--- | :--- | :--- |
+| `01-Snare-Top.wav` | ✅ **Good** | Delimited by `-` |
+| `Song_Kick_01.wav` | ✅ **Good** | Delimited by `_` |
+| `Ride-Main.wav` | ✅ **Good** | Delimited |
+| `MySnare.wav` | ❌ **Bad** | No delimiter |
+| `KickDrum.wav` | ❌ **Bad** | No delimiter |
+
+
+## 🎛️ Phase 2: Import & Organization (In Reaper)
+
+### 1. Open the Template
+Open `Automatic Mapping.RPP`.
+
+### 2. Drag & Drop
+Drag all your prepared stems into the project, placing them **at the bottom** of the track list (below existing tracks).
+
+### 3. Run the Prep Script
+* Open the **Action List** (`?` key).
+* Run: **`Script: prep_automation_drums_tracks.lua`**.
+    * *Alert:* The script will ask for confirmation to delete tracks **twice**. Click **Confirm/Yes**.
+
+### 4. Alignment
+Once processed, ensure your audio is aligned with the project grid. You can now import your existing tempo map or create one to match the audio.
+
+
+## ⚡ Phase 3: MIDI Generation (The Trigger)
+
+### 1. Record to MIDI
+* **Record** the song from start to finish.
+* 
+### 2. Run the Processor Script
+* Open Action List and run: **`Script: fix_automated_drums.lua`**.
+* Click **Run Process**.
+
+## ✅ Final Result
+
+Check the **`PART DRUMS`** track. It now contains a quantized, cleaned, and mapped drum chart ready for final human review.
+
+```text
+[ SUMMARY FLOWCHART ]
+
+[ Raw Stems ] 
+      │ (Renamed: Kick_01.wav, etc.)
+      ▼
+[ Drag to Reaper ]
+      │
+      ▼
+[ Run: prep_automation_drums_tracks.lua ] ──► (Moves tracks, Normalizes Cymbals)
+      │
+      ▼
+[ JSFX Triggers ] ──────────────────────────► (Detects Hits via True Peak)
+      │
+      ▼
+[ Record to "TRANSCRIPTION" ]
+      │
+      ▼
+[ Run: Drum Transcription Processor.lua ] ──► (Quantizes, Dedupes, Remaps)
+      │
+      ▼
+[ ✅ PART DRUMS READY ]
+```
+
+---
 
 # Audio Importer (Drums only for now)
 
@@ -169,3 +259,71 @@ The script copies notes from `TRANSCRIPTION` to `PART DRUMS` and re-pitches them
 ## ⚠️ Requirements
 
 * **REAPER:** Tested on REAPER 6.x and 7.x.
+
+# Audio To MIDI Drum Trigger (True Peak Logic)
+
+## Overview
+This version of the standard JSFX Drum Trigger includes a **True Peak analysis algorithm**. Unlike standard triggers that fire solely based on a fixed volume threshold, this mod analyzes the *context* of the audio. It compares the incoming transient against the average volume of the preceding audio (the "Lookback" window) to distinguish genuine drum hits from bleed or sustain.
+
+## New Mod Parameters
+
+### 1. Transient Lookback (ms)
+* **Slider 9**
+* **Range:** 0ms to 200ms
+
+This defines the "Context Window" preceding a potential hit. When the signal crosses the open threshold, the plugin looks backwards into a memory buffer for the duration set here. It calculates the average volume of that previous audio.
+
+* **Higher Values (e.g., 50-100ms):** The plugin compares the hit against the general "noise floor" or room tone. This is more stable for isolated tracks.
+* **Lower Values (e.g., 10-20ms):** The plugin compares the hit against the immediate previous audio. This is better for fast rolls where the sustain of the previous hit might mask the attack of the next one.
+
+### 2. Transient Sensitivity (Ratio)
+* **Slider 10**
+* **Range:** 1.0 to 100.0
+
+This acts as a "Contrast Control". It sets the required ratio between the **Detected Peak** and the **Lookback Average**.
+
+$$\text{Ratio} = \frac{\text{Current Peak Volume}}{\text{Average Lookback Volume}}$$
+
+* **Example (Ratio 3.0):** The transient peak must be **3 times louder** than the average volume of the lookback window to trigger a MIDI note.
+* **Tuning:**
+    * **Increase** this value to eliminate bleed (e.g., snare bleed on a kick track).
+    * **Decrease** this value if ghost notes or soft hits are being ignored.
+
+
+
+### 3. Detection Mode
+* **Slider 11**
+* **Options:** Average Window (Diluted), True Peak (Accurate)
+
+This changes how the plugin calculates the "numerator" of the ratio formula.
+
+* **Mode 0: Average Window (Diluted)**
+    * *Logic:* Uses `Hit Volume * 0.5`.
+    * *Behavior:* This mimics older "RMS" style detection. It is less sensitive and smoother. Use this for messy recordings where the transient is not very sharp.
+* **Mode 1: True Peak (Accurate)**
+    * *Logic:* Uses the raw `Hit Volume`.
+    * *Behavior:* This uses the absolute loudest sample found within the 4ms attack window. It is highly accurate and aggressive. This is the recommended mode for modern, punchy drums.
+
+---
+
+## The "True Peak" Workflow
+
+Unlike standard triggers that fire the instant a threshold is crossed, this plugin adds a smart logic phase:
+
+1.  **Gate Open:** Signal crosses the `Open Threshold` (Slider 1).
+2.  **Wait Phase:** The plugin waits for **4ms** (hardcoded `attack_ms`) to scan for the true maximum peak of the transient.
+3.  **Context Check:** It calculates the average volume of the `Lookback` window.
+4.  **Decision:**
+    * If `(Peak / Lookback) > Sensitivity`, the Note is fired.
+    * If the ratio is too low (meaning the volume rose, but not sharply enough relative to the background), the trigger is rejected as "Bleed/Sustain".
+
+## Debugging
+
+The plugin features an on-screen Graphics Overlay (`@gfx`) that displays the statistics of the last 10 detected hits:
+
+* **MBT:** Measure.Beat.Time location.
+* **Jump:** The calculated ratio (e.g., `3.5x`).
+* **Hit:** The volume of the peak.
+* **Tail:** The average volume of the lookback window.
+
+*Use these numbers to fine-tune your Sensitivity Ratio slider.*
