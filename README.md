@@ -10,8 +10,9 @@ V.0.1
 * **Template:** `Automatic Mapping.RPP` (The project template with pre-routed tracks).
 * **Scripts:**
     * `prep_automation_drums_tracks.lua`
+    * `prep_drums_recording.lua`
     * `fix_automated_drums.lua`
-    * (both loaded with the **Action List** > **New Action** > **Load...**
+    * (loaded with the **Action List** > **New Action** > **Load...**)
 * **Plugins:** `Audio To MIDI Drum Trigger (True Peak Logic)`
 
 ---
@@ -64,8 +65,9 @@ Once processed, ensure your audio is aligned with the project grid. You can now 
 ## ⚡ Phase 3: MIDI Generation (The Trigger)
 
 ### 1. Record to MIDI
+* Open Action List and run: **`Script: prep_drums_recording.lua`**.
 * **Record** the song from start to finish.
-* 
+  
 ### 2. Run the Processor Script
 * Open Action List and run: **`Script: fix_automated_drums.lua`**.
 * Click **Run Process**.
