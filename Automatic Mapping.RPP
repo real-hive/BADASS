@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.57/win64" 1767747133 0
+<REAPER_PROJECT 0.1 "7.57/win64" 1767749479 0
   RIPPLE 0 0
   GROUPOVERRIDE 0 0 0 0
   AUTOXFADE 129
@@ -494,7 +494,7 @@
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0 0
     LANEREC -1 -1 -1 0
-    SEL 0
+    SEL 1
     REC 0 0 0 0 0 0 0 0
     TRACKHEIGHT 207 0 0 0 0 0 0
     INQ 0 0 0 0.5 100 0 0 100
@@ -518,7 +518,7 @@
       WAK 0 0
       BYPASS 0 0 0
       <JS drumaudiotomidipro ""
-        -18 -17 50 0 10 69 1 1 100 5 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        -18 -17 50 0 10 49 1 1 100 5 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       >
       FLOATPOS 0 0 0 0
       FXID {F899164A-C908-4D38-868E-D1A20A3F89AF}
@@ -3578,7 +3578,7 @@
     BUSCOMP 1 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0 0
     LANEREC -1 -1 -1 0
-    SEL 1
+    SEL 0
     REC 0 4096 1 7 0 0 0 0
     TRACKHEIGHT 86 0 0 0 0 0 0
     INQ 0 0 0 0.5 100 0 0 100
